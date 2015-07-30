@@ -121,15 +121,19 @@ function initCamera() {
 
           var positions = ctracker.getCurrentPosition();
 
-          //62 is the thip of the nose
-          var xPercent = positions[62][0]/videoWidth;
+          if (positions) {
+            //62 is the thip of the nose
+            var xPercent = positions[62][0]/videoWidth;  
+          }
           //invert because the video feed has been mirrored to be more intuitive
           xPercent = 1-xPercent;
           //make it so there are only 7 possible values to correspond with the scale notes
           var xToIndex = Math.round( xPercent * 6) + 1 ;
 
           //set the oscilator frequncy to the note number based on face position
-          var frequency = scale.get(xToIndex).fq();
+          var note = scale.get(xToIndex);
+          $("#current-note").text(note.name());
+          var frequency = note.fq();
           oscillator.frequency.value = frequency;
 
           //some filter stuff that doesnt work.
@@ -140,7 +144,7 @@ function initCamera() {
           //filter.frequency.value = yPercent * maxFreq;
         }
         positionLoop();
-        
+
       }, errorCallback);
     } else {
       // video.src = 'somevideo.webm'; // fallback.
