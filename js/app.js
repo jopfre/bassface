@@ -55,6 +55,7 @@ function initAudio() {
 }
 
 function initControls() {
+  var $playStop = $("#play-stop");
   $(window).keydown(function(e){
     var key = e.which;
     switch(key) {   
@@ -73,13 +74,23 @@ function initControls() {
     oscillator.connect(gainNode);
     // noiseNode.connect(gainNode);
     isPlaying = true;
+    $playStop.text("pause");
   };
 
   function stop(){
     oscillator.disconnect(gainNode);
     // noiseNode .disconnect(gaininNode);
     isPlaying = false;
+    $playStop.text("play");
   };
+
+  $("#play-stop").on("click touchstart", function() {
+    if (isPlaying) {
+      stop();
+    } else {
+      play();
+    }
+  });
 }
 
 function initCamera() {
