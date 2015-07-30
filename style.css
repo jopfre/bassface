@@ -2,7 +2,15 @@ body {
   max-width: 768px;
   margin: 0 auto;
 }
-video {
+#video-wrapper {
+  position: relative;
+  width: 400px;
+  height: 225px;
+}
+video, canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   transform: scale(-1, 1);
 }
 ol {

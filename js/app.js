@@ -132,9 +132,15 @@ function initCamera() {
 
           //set the oscilator frequncy to the note number based on face position
           var note = scale.get(xToIndex);
-          $("#current-note").text(note.name());
-          var frequency = note.fq();
-          oscillator.frequency.value = frequency;
+          var frequency;
+          if (note) {
+            $("#current-note").text(note.name());
+            frequency = note.fq();
+          }
+
+          if (frequency) {
+            oscillator.frequency.value = frequency;
+          }
 
           //some filter stuff that doesnt work.
           // var yPercent = 1-(positions[62][1]/videoHeight);
@@ -144,6 +150,15 @@ function initCamera() {
           //filter.frequency.value = yPercent * maxFreq;
         }
         positionLoop();
+
+        var canvasInput = document.getElementById('canvas');
+        var cc = canvasInput.getContext('2d');
+        function drawLoop() {
+          requestAnimationFrame(drawLoop);
+          cc.clearRect(0, 0, canvasInput.width, canvasInput.height);
+          ctracker.draw(canvasInput);
+        }
+        drawLoop();
 
       }, errorCallback);
     } else {
