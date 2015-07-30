@@ -6,10 +6,8 @@
   <link rel="stylesheet" href="style.css">
 
   <script src="js/vendor/jquery-1.11.1.min.js"></script>
-  <!-- face recognition and tracking -->
-  <script src="js/vendor/clmtrackr.js"></script>
-  <!-- model for face recognition --><!-- not yet implemented -->
-  <script src="js/vendor/model_pca_20_svm.js"></script>
+  <!-- face tracking -->
+  <script src="js/vendor/headtrackr.js"></script>
   <!-- musical note handler -->
   <script src="js/vendor/teoria.js"></script>
 
@@ -21,7 +19,7 @@
     <h4>alpha</h4>
   </header>
   <section id="video-wrapper">
-    <video width="400px" height="225px" autoplay></video>
+    <video id="video" width="400px" height="225px" autoplay></video>
     <canvas id="canvas" width="400px" height="225px"></canvas>
   </section> 
   <section>

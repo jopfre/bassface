@@ -94,7 +94,8 @@ function initCamera() {
                               navigator.mozGetUserMedia ||
                               navigator.msGetUserMedia;
 
-    var video = document.querySelector('video');
+    var video = document.getElementById('video');
+    var canvas = document.getElementById('canvas');
     var videoHeight = video.offsetHeight;
     var videoWidth = video.offsetWidth;
 
@@ -111,21 +112,28 @@ function initCamera() {
         video.src = window.URL.createObjectURL(stream);
 
         //Face recognition and tracking
-        var ctracker = new clm.tracker();
-        ctracker.init(pModel);
-        ctracker.start(video);
+        var htracker = new headtrackr.Tracker();
+        htracker.init(video, canvas);
+        htracker.start();
 
-        function positionLoop() {
-          //use an animation frame to create a 60fps loop to check face position.
-          requestAnimationFrame(positionLoop);
-
-          var positions = ctracker.getCurrentPosition();
-
-          if (positions) {
-            //62 is the thip of the nose
-            var xPercent = positions[62][0]/videoWidth;  
+        document.addEventListener('headtrackrStatus', 
+          function (event) {
+            if (event.status == "getUserMedia") {
+              alert("getUserMedia is supported!");
+            }
           }
+        );
+
+        document.addEventListener('facetrackingEvent', 
+          function (event) {
+            coordinateToFrequency(event.x);
+            // someFunction(event.y)
+          }
+        );
+
+        function coordinateToFrequency(xCoordinate) {
           //invert because the video feed has been mirrored to be more intuitive
+          var xPercent = xCoordinate/videoWidth;
           xPercent = 1-xPercent;
           //make it so there are only 7 possible values to correspond with the scale notes
           var xToIndex = Math.round( xPercent * 6) + 1 ;
@@ -137,28 +145,10 @@ function initCamera() {
             $("#current-note").text(note.name());
             frequency = note.fq();
           }
-
           if (frequency) {
             oscillator.frequency.value = frequency;
           }
-
-          //some filter stuff that doesnt work.
-          // var yPercent = 1-(positions[62][1]/videoHeight);
-          // oscillator.frequency.value = xPercent * maxFreq;
-          // gainNode.gain.value = yPercent * maxVol;
-          // var maxFreq = scale.get(7).fq();
-          //filter.frequency.value = yPercent * maxFreq;
         }
-        positionLoop();
-
-        var canvasInput = document.getElementById('canvas');
-        var cc = canvasInput.getContext('2d');
-        function drawLoop() {
-          requestAnimationFrame(drawLoop);
-          cc.clearRect(0, 0, canvasInput.width, canvasInput.height);
-          ctracker.draw(canvasInput);
-        }
-        drawLoop();
 
       }, errorCallback);
     } else {
