@@ -6,6 +6,8 @@ var gainNode;
 var root = teoria.note('b1');
 var scale = root.scale('ionian');
 
+var maxFilterFrequency = 2000;
+
 //doc ready
 $(init);
 
@@ -22,40 +24,45 @@ function initAudio() {
   //create oscillator
   oscillator = audioCtx.createOscillator();
   oscillator.start();
-  oscillator.type = 0; // sine wave
-  oscillator.frequency.value = 2500; // value in hertz
+  oscillator.type = "sine";
+  oscillator.frequency.value = 2500; //hertz
 
-  //attempt at white noise node to add some distortion to the bass, does kind of work but havent been able to filter it properly. there is a distortion method in the web audio api which may be better suited. left for now as not part of the core.
-  // var noiseNode = audioCtx.createBufferSource()
-  //   , buffer = audioCtx.createBuffer(1, 4096, audioCtx.sampleRate)
-  //   , data = buffer.getChannelData(0);
+  //create distortion
+  distortion = audioCtx.createWaveShaper();
 
-  // for (var i = 0; i < 4096; i++) {
-  //  data[i] = Math.random();
-  // }
-  // noiseNode.buffer = buffer;
-  // noiseNode.loop = true;
-  // // noiseNode.connect(audioCtx.destination);
-  // noiseNode.start();
-  //create gain node
+  function makeDistortionCurve(amount) { //https://developer.mozilla.org/en-US/docs/Web/API/WaveShaperNode#Example
+    var k = typeof amount === 'number' ? amount : 50,
+      n_samples = 44100,
+      curve = new Float32Array(n_samples),
+      deg = Math.PI / 180,
+      i = 0,
+      x;
+    for ( ; i < n_samples; ++i ) {
+      x = i * 2 / n_samples - 1;
+      curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+    }
+    return curve;
+  };
 
-  //create gain node - mater volume
+  distortion.curve = makeDistortionCurve(400);
+  distortion.oversample = '4x';
+  
+  //create filter
+  filter = audioCtx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = maxFilterFrequency;
+
+  //routing
+  oscillator.connect(distortion);
+  distortion.connect(filter);
+
+  //create gain node (mater volume)
   gainNode = audioCtx.createGain();
   gainNode.connect(audioCtx.destination);
-
-  //create filter. not really working as yet. left for now as not in core.
-  // var filter = audioCtx.createBiquadFilter();
-  // filter.type = 0;  // Lowpass
-  // filter.frequency.value =  0; //scale.get(4).fq();
-  // filter.Q.value = 0;
-  // filter.gain.value = 0;
-
-  // oscillator.connect(filter);
-  // noiseNode.connect(filter);
 }
 
 function initControls() {
-  var $playStop = $("#play-stop");
+  var $playStop = $("#hud");
   $(window).keydown(function(e){
     var key = e.which;
     switch(key) {   
@@ -71,20 +78,22 @@ function initControls() {
   });
 
   function play(){
-    oscillator.connect(gainNode);
-    // noiseNode.connect(gainNode);
+    // oscillator.connect(gainNode);
+    // distortion.connect(gainNode);
+    filter.connect(gainNode);
     isPlaying = true;
-    $playStop.text("pause");
+    console.log("play");
   };
 
   function stop(){
-    oscillator.disconnect(gainNode);
-    // noiseNode .disconnect(gaininNode);
+    // oscillator.disconnect(gainNode);
+    // distortion.disconnect(gainNode);
+    filter.disconnect(gainNode);
     isPlaying = false;
-    $playStop.text("play");
+    console.log("stop");
   };
 
-  $("#play-stop").on("click touchstart", function() {
+  $playStop.on("click", function() {
     if (isPlaying) {
       stop();
     } else {
@@ -107,57 +116,173 @@ function initCamera() {
 
     var video = document.getElementById('video');
     var canvas = document.getElementById('canvas');
-    var videoHeight = video.offsetHeight;
+    var overlay = document.getElementById('overlay');
+
+    var windowWidth = window.innerWidth;
+    var windowHeight = window.innerHeight;
+    
     var videoWidth = video.offsetWidth;
+    var videoHeight = video.offsetHeight;
+
+    function scaleVideo() { //not working  
+
+      var videoRatio = videoHeight/videoWidth;
+
+      videoHeight = videoRatio * windowWidth;
+
+      if (windowWidth<=windowHeight) {
+        $(video).width(windowWidth);
+        $(canvas).width(windowWidth);
+        $(video).height(videoHeight);
+        $(canvas).height(videoHeight);
+        $('#video-wrapper').height(videoHeight);
+        $('#video-wrapper').width(windowWidth);
+        videoHasBeenScaled = true;
+      } else if (windowWidth>windowHeight) {
+        $(video).width(videoHeight);
+        $(overlay).width(videoHeight);
+        $(hud).width(videoHeight);
+        // $(canvas).width(videoHeight);
+        $(video).height(windowHeight);
+        $(overlay).height(windowHeight);
+        $(hud).height(windowHeight);
+        // $(canvas).height(windowHeight);
+        $('#video-wrapper').height(windowHeight);
+        $('#video-wrapper').width(videoHeight);
+        videoHasBeenScaled = true;
+      }      
+    }
 
     if (navigator.getUserMedia) {
       navigator.getUserMedia({
         audio: false,
         video: { 
           mandatory: {
-            maxWidth: 640,
-            maxHeight: 360
-          }
+            // maxWidth: windowWidth,
+            // minWidth: windowWidth,
+            // minHeight: videoHeight,
+            // maxHeight: videoHeight
+          },
+          optional: [
+            // {minWidth: 320},
+            // {minWidth: 640},
+            // {minWidth: 1024},
+            // {minWidth: 1280},
+            // {minWidth: 1920},
+            // {minWidth: 2560},
+          ]
+
         }
       }, function(stream) {
         video.src = window.URL.createObjectURL(stream);
 
         //Face recognition and tracking
-        var htracker = new headtrackr.Tracker();
+        var htracker = new headtrackr.Tracker({ui: false});
         htracker.init(video, canvas);
         htracker.start();
+        // scaleVideo();
 
         document.addEventListener('headtrackrStatus', 
           function (event) {
-            if (event.status == "getUserMedia") {
-              alert("getUserMedia is supported!");
+            var status = event.status;
+            var $status = $("#status");
+            switch(status) {
+            case "getUserMedia" :
+              message = "getUserMedia supported";
+              break;
+            case "no getUserMedia" :
+              message = "getUserMedia not supported";
+              break;
+            case "camera found" :
+              message = "camera found";
+              break;
+            case "no camera" :
+              message = "camera not found";
+              break;
+            case "whitebalance" :
+              message = "whitebalancing";
+              break;
+            case "detecting" :
+              message = "finding face";
+              break;
+            case "hints" :
+              message = "it's hard to find the face";
+              break;
+            case "found" :
+              message = "face found";
+              break;
+            case "lost" :
+              message = "lost face";
+              break;
+            case "redetecting" :
+              message = "trying to redetect face";
+              break;
+            case "stopped" :
+              message = "stopped";
+              break;
+            default :
+              message ="nothing";
+              break;
             }
+            $("#status").text(message);
           }
         );
 
         document.addEventListener('facetrackingEvent', 
           function (event) {
-            coordinateToFrequency(event.x);
-            // someFunction(event.y)
+            coordinateToOscilatorFrequency(event.x);
+            coordinateToFilterFrequency(event.y)
+            drawModel(event);
           }
         );
 
-        function coordinateToFrequency(xCoordinate) {
-          //invert because the video feed has been mirrored to be more intuitive
+        function coordinateToOscilatorFrequency(xCoordinate) {
+          var note;
+          var frequency;
           var xPercent = xCoordinate/videoWidth;
+
+          //invert because the video feed has been mirrored to be more intuitive
           xPercent = 1-xPercent;
-          //make it so there are only 7 possible values to correspond with the scale notes
-          var xToIndex = Math.round( xPercent * 6) + 1 ;
+          //make it so there are only 7 (or a multiple of) possible values to correspond with the scale notes
+          // var xToIndex = Math.round( xPercent * 6) + 1 ; //one octave
+          var xToIndex = Math.round( xPercent * 13) + 1 ; //two octvates
+
+          if (xToIndex<8) {
+            note = scale.get(xToIndex);
+          } else {
+            note = scale.get(xToIndex-7).interval('P8');
+          }
 
           //set the oscilator frequncy to the note number based on face position
-          var note = scale.get(xToIndex);
-          var frequency;
           if (note) {
             $("#current-note").text(note.name());
             frequency = note.fq();
           }
           if (frequency) {
             oscillator.frequency.value = frequency;
+          }
+        }
+
+        function coordinateToFilterFrequency(yCoordinate) {
+          //invert because the video feed has been mirrored to be more intuitive
+          var yPercent = yCoordinate/videoHeight;
+          yPercent = 1-yPercent;
+
+          filter.frequency.value = maxFilterFrequency * yPercent;
+        }
+
+        function drawModel(event) {
+          var overlayContext = document.getElementById("overlay").getContext("2d");
+          // clear canvas
+          overlayContext.clearRect(0,0,320,240);
+          // once we have stable tracking, draw rectangle
+          if (event.detection == "CS") {
+            overlayContext.translate(event.x, event.y)
+            overlayContext.rotate(event.angle-(Math.PI/2));
+            overlayContext.strokeStyle = "white";
+            overlayContext.strokeRect((-(event.width/2)) >> 0, (-(event.height/2)) >> 0, event.width, event.height);
+            overlayContext.rotate((Math.PI/2)-event.angle);
+            overlayContext.translate(-event.x, -event.y);
           }
         }
 

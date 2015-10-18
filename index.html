@@ -6,33 +6,28 @@
   <link rel="stylesheet" href="style.css">
 
   <script src="js/vendor/jquery-1.11.1.min.js"></script>
-  <!-- face tracking -->
-  <script src="js/vendor/headtrackr.js"></script>
-  <!-- musical note handler -->
-  <script src="js/vendor/teoria.js"></script>
+  <script src="js/vendor/headtrackr.js"></script><!-- face tracking -->
+  <script src="js/vendor/teoria.js"></script><!-- musical note handler -->
 
   <script src="js/app.js"></script>
 </head>
 <body>
-  <header>
-    <h1>BassFace</h1>
-    <h4>alpha</h4>
-  </header>
-  <section id="video-wrapper">
-    <video id="video" width="400px" height="225px" autoplay></video>
-    <canvas id="canvas" width="400px" height="225px"></canvas>
-  </section> 
-  <section id="controls">
-    <button id="play-stop">play</button>
-  </section>
-  <section>
-    <span>current note: </span><span id="current-note">none</span> 
-    <ol>
-      <li>allow bassface to use your cam</li>
-      <li>press space for bass</li>
-      <li>pace your face left and right to change the bass</li>
-    </ol>
-    <p>you may need headphones if your speakers are bad at bass</p>
+  <section id="content">    
+    <h1>bassface</h1>
+    <section id="video-wrapper">
+    
+      <video id="video" width="320" height="240" autoplay></video>
+      <canvas id="canvas" width="320" height="240"></canvas>
+      <canvas id="overlay" width="320" height="240"></canvas>
+      
+      <section id="hud">
+        <span id="current-note">note</span>
+        <span id="status">status</span>
+     </section>
+    
+    </section>
+    <p>touch your face to start the bass</p>
+    <p>(or press space)</p>
   </section>
 </body>
 </html>
