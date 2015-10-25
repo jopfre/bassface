@@ -100,6 +100,36 @@ function initControls() {
       play();
     }
   });
+
+  var $sineButton = $("#sine");
+  var $squareButton = $("#square");
+  var $sawButton = $("#saw");
+  var $triangleButton = $("#triangle");
+
+  $sineButton.on("click", function() {
+    $("#wave-controls button").removeClass("active");
+    $(this).addClass("active");
+    oscillator.type = "sine";
+    console.log(oscillator.type);
+  });
+  $squareButton.on("click", function() {
+    $("#wave-controls button").removeClass("active");
+    $(this).addClass("active");
+    oscillator.type = "square";
+    console.log(oscillator.type);
+  });
+  $sawButton.on("click", function() {
+    $("#wave-controls button").removeClass("active");
+    $(this).addClass("active");
+    oscillator.type = "sawtooth";
+    console.log(oscillator.type);
+  });
+  $triangleButton.on("click", function() {
+    $("#wave-controls button").removeClass("active");
+    $(this).addClass("active");
+    oscillator.type = "triangle";
+    console.log(oscillator.type);
+  });
 }
 
 function initCamera() {
@@ -121,36 +151,23 @@ function initCamera() {
     var windowWidth = window.innerWidth;
     var windowHeight = window.innerHeight;
     
-    var videoWidth = video.offsetWidth;
-    var videoHeight = video.offsetHeight;
+    var $display = $('#video-wrapper, #video, #canvas, #overlay, #hud ') 
 
-    function scaleVideo() { //not working  
-
-      var videoRatio = videoHeight/videoWidth;
-
-      videoHeight = videoRatio * windowWidth;
-
-      if (windowWidth<=windowHeight) {
-        $(video).width(windowWidth);
-        $(canvas).width(windowWidth);
-        $(video).height(videoHeight);
-        $(canvas).height(videoHeight);
-        $('#video-wrapper').height(videoHeight);
-        $('#video-wrapper').width(windowWidth);
-        videoHasBeenScaled = true;
-      } else if (windowWidth>windowHeight) {
-        $(video).width(videoHeight);
-        $(overlay).width(videoHeight);
-        $(hud).width(videoHeight);
-        // $(canvas).width(videoHeight);
-        $(video).height(windowHeight);
-        $(overlay).height(windowHeight);
-        $(hud).height(windowHeight);
-        // $(canvas).height(windowHeight);
-        $('#video-wrapper').height(windowHeight);
-        $('#video-wrapper').width(videoHeight);
-        videoHasBeenScaled = true;
-      }      
+    function scaleVideo(videoWidth, videoHeight) { //test on mobile
+      var headerHeight = $('header').height();
+      var footerHeight = $('footer').height();
+      var availableHeight = windowHeight - headerHeight - footerHeight;
+      // find the biggest rectangle with the aspect ratio that fit within the viewport
+      if (videoHeight/videoWidth * windowWidth < availableHeight) {
+        //it fits
+        $display.width(windowWidth);
+        $display.height(videoHeight/videoWidth * windowWidth);
+      } else {
+        var scaledWidth = videoWidth/videoHeight * (availableHeight);
+        $display.width(scaledWidth);
+        $("#content").width(scaledWidth);
+        $display.height(availableHeight);        
+      }   
     }
 
     if (navigator.getUserMedia) {
@@ -158,29 +175,25 @@ function initCamera() {
         audio: false,
         video: { 
           mandatory: {
-            // maxWidth: windowWidth,
-            // minWidth: windowWidth,
-            // minHeight: videoHeight,
-            // maxHeight: videoHeight
           },
           optional: [
-            // {minWidth: 320},
-            // {minWidth: 640},
-            // {minWidth: 1024},
-            // {minWidth: 1280},
-            // {minWidth: 1920},
-            // {minWidth: 2560},
           ]
-
         }
       }, function(stream) {
         video.src = window.URL.createObjectURL(stream);
+
+        video.addEventListener('playing', function() { //video dimensions only available once playing
+          if (this.videoWidth === 0) {
+            console.error('videoWidth is 0. Camera not connected?');
+          } else {
+            scaleVideo(video.videoWidth, video.videoHeight);
+          }
+        }, false);
 
         //Face recognition and tracking
         var htracker = new headtrackr.Tracker({ui: false});
         htracker.init(video, canvas);
         htracker.start();
-        // scaleVideo();
 
         document.addEventListener('headtrackrStatus', 
           function (event) {
@@ -230,16 +243,18 @@ function initCamera() {
 
         document.addEventListener('facetrackingEvent', 
           function (event) {
-            coordinateToOscilatorFrequency(event.x);
-            coordinateToFilterFrequency(event.y)
+            var videoWidth = $('#video').width();
+            var videoHeight = $('#video').height();
+            coordinateToOscilatorFrequency(event.x/videoWidth);
+            coordinateToFilterFrequency(event.y/videoHeight)
             drawModel(event);
           }
         );
 
-        function coordinateToOscilatorFrequency(xCoordinate) {
+        function coordinateToOscilatorFrequency(xPercent) {
           var note;
           var frequency;
-          var xPercent = xCoordinate/videoWidth;
+          // var xPercent = xCoordinate/videoWidth;
 
           //invert because the video feed has been mirrored to be more intuitive
           xPercent = 1-xPercent;
@@ -263,9 +278,9 @@ function initCamera() {
           }
         }
 
-        function coordinateToFilterFrequency(yCoordinate) {
+        function coordinateToFilterFrequency(yPercent) {
           //invert because the video feed has been mirrored to be more intuitive
-          var yPercent = yCoordinate/videoHeight;
+          // var yPercent = yCoordinate/videoHeight;
           yPercent = 1-yPercent;
 
           filter.frequency.value = maxFilterFrequency * yPercent;
@@ -277,12 +292,11 @@ function initCamera() {
           overlayContext.clearRect(0,0,320,240);
           // once we have stable tracking, draw rectangle
           if (event.detection == "CS") {
-            overlayContext.translate(event.x, event.y)
-            overlayContext.rotate(event.angle-(Math.PI/2));
-            overlayContext.strokeStyle = "white";
-            overlayContext.strokeRect((-(event.width/2)) >> 0, (-(event.height/2)) >> 0, event.width, event.height);
-            overlayContext.rotate((Math.PI/2)-event.angle);
-            overlayContext.translate(-event.x, -event.y);
+            overlayContext.strokeStyle = "rgba(255, 255, 255, 0.2)";
+            overlayContext.strokeRect(event.x, event.y, 320, 1);
+            overlayContext.strokeRect(event.x, event.y, -320, 1);
+            overlayContext.strokeRect(event.x, event.y, 1, 240);
+            overlayContext.strokeRect(event.x, event.y, 1, -240);
           }
         }
 

@@ -12,22 +12,29 @@
   <script src="js/app.js"></script>
 </head>
 <body>
-  <section id="content">    
-    <h1>bassface</h1>
+  <section id="content"> 
+    <header>   
+      <h1>bassface</h1>
+      <section id="wave-controls">
+        <button id="sine" class="active">sine</button>
+        <button id="square">square</button>
+        <button id="saw">saw</button>
+        <button id="triangle">triangle</button>
+      </section>
+    </header>
     <section id="video-wrapper">
-    
       <video id="video" width="320" height="240" autoplay></video>
       <canvas id="canvas" width="320" height="240"></canvas>
       <canvas id="overlay" width="320" height="240"></canvas>
-      
       <section id="hud">
         <span id="current-note">note</span>
         <span id="status">status</span>
      </section>
-    
     </section>
-    <p>touch your face to start the bass</p>
-    <p>(or press space)</p>
+    <footer>
+      <p>touch your face to start the bass</p>
+      <p>(or press space)</p>
+    </footer>
   </section>
 </body>
 </html>

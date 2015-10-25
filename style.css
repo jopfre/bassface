@@ -2,11 +2,30 @@ body {
   background: black;
   color: white;
   font-family: sans-serif;
-  text-align: center;
 }
 #content {
-  width: 320px;
+  /*width: 320px;*/
   margin: 0 auto;
+}
+h1 {
+  margin: 1rem;
+}
+#wave-controls {
+  display: flex;
+}
+#wave-controls button{
+  flex: 1 1 auto;
+  background: transparent;
+  border: none;
+  color: white;
+  height: 2rem;
+}
+#wave-controls button:focus {
+  outline: none;
+}
+#wave-controls button.active {
+  border-bottom: solid 0.25rem white;
+  padding-top: 0.25rem;
 }
 #video-wrapper {
   position: relative;
@@ -49,10 +68,12 @@ video, canvas {
 #status {
   bottom: 0;
 }
-button {
-  height: 5rem;
-  width: 5rem;
-}
 ol {
   font-size: 3em;
+}
+footer {
+  overflow: auto;
+}
+p {
+  text-align: center;
 }
