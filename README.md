@@ -1,5 +1,5 @@
 # bassface
-demo http://jopf.re/bassface
+demo https://jopf.re/bassface
 
 to do:
 add sass and javascript concat
